@@ -18,6 +18,7 @@ import com.sky.result.PageResult;
 import com.sky.service.EmployeeService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.datetime.joda.LocalDateTimeParser;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -50,7 +51,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
 
         //密码比对
-        // TODO 后期需要进行md5加密，然后再进行比对
         password = DigestUtils.md5DigestAsHex(password.getBytes());
         if (!password.equals(employee.getPassword())) {
             //密码错误
@@ -74,15 +74,15 @@ public class EmployeeServiceImpl implements EmployeeService {
         //设置employee中的其余属性
         employee.setStatus(StatusConstant.ENABLE);
         employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
-        employee.setCreateTime(LocalDateTime.now());
-        employee.setUpdateTime(LocalDateTime.now());
-        //TODO: 后期需要完善,改为当前登录用户的id
-        employee.setCreateUser(BaseContext.getCurrentId());
-        employee.setUpdateUser(BaseContext.getCurrentId());
         //保存到数据库
         employeeMapper.save(employee);
     }
-
+    /**
+     * 分页查询员工信息
+     *
+     * @param employeePageQueryDTO 员工分页查询DTO，包含分页相关信息
+     * @return 分页查询结果，包含总记录数和当前页记录列表
+     */
     @Override
     public PageResult page(EmployeePageQueryDTO employeePageQueryDTO) {
 
@@ -95,6 +95,34 @@ public class EmployeeServiceImpl implements EmployeeService {
         List<Employee> records = page.getResult();
 
         return new PageResult(total,records);
+    }
+
+    /**
+     * 启用或停用员工账号
+     *
+     * @param status 员工账号状态，启用或停用
+     * @param id 员工的ID
+     */
+    @Override
+    public void startorStop(Integer status, Long id) {
+        // 创建一个包含状态和ID的Employee对象
+        Employee employee = Employee.builder().status(status).id(id).build();
+        // 调用employeeMapper的update方法更新员工信息
+        employeeMapper.update(employee);
+    }
+
+    @Override
+    public Employee getById(Long id) {
+        Employee employee = employeeMapper.getById(id);
+        employee.setPassword("****");
+        return employee;
+    }
+
+    @Override
+    public void update(EmployeeDTO employeeDTO) {
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO,employee);
+        employeeMapper.update(employee);
     }
 
 }
